@@ -37,11 +37,22 @@ More:
   * [Python3 Shotgun toolkit](#python3-shotgun-toolkit)
   * [PySide2 Shotgun Toolkit support](#pyside2-shotgun-toolkit-support)
 
+**Compatibility**
+
+**This engine has been tested on Windows 10/11 with the following Blender versions:**
+- Blender 2.82, 2.83, 2.90, 2.92 (original development)
+- **Blender 4.3** ✅ Fully tested and working
+- **Blender 5.0** ✅ Fully tested and working
+
+**Recent Updates (2026):**
+- ✅ **Automatic PySide6 installation** - No manual Qt installation required!
+- ✅ Fixed path handling with spaces in directory names
+- ✅ Native Blender menu integration (no Qt popup menus)
+- ✅ Blender 5.0 operator API compatibility
+
 **Disclaimer**
 
-**This engine has been developed and tested in Windows 10 using the following Blender versions: 2.82.0, 2.83.0, 2.90.0, 2.92.0 (alpha)**
-
-The engine has not been used in production before so **use it at your own risk**. Also keep in mind that some of the hooks provided might need to be adapted to your work flows and pipelines. If you use it in production, I would love to hear about it, drop me a message in the contact link at the beginning of this documentation.
+Please keep in mind that some of the hooks provided might need to be adapted to your work flows and pipelines. If you use it in production, I would love to hear about it, drop me a message in the contact link at the beginning of this documentation.
 
 
 ## Engine Installation
@@ -193,21 +204,52 @@ If you want more information on how to configure software launches, here is the 
 
 ## Configuring Blender Engine Requirements
 
-# PySide2 Installation
+### Automatic PySide6 Installation (Recommended)
 
-PySide2 is required to run toolkit applications. It must be installed in a place where python within Blender can find it as a module.
+**As of 2026, PySide6 is automatically installed!** 🎉
 
-One option is to install this library within the bundled python version that comes with Blender: (windows example)
+When you launch Blender from Shotgun Desktop, the engine will:
+1. Check if PySide2 or PySide6 is available
+2. If neither is found, automatically install PySide6 to your user directory
+3. No administrator rights required
+4. Takes 1-2 minutes on first launch
 
-`C:\Program Files\Blender Foundation\Blender 2.82\2.82\python\bin\python.exe -m pip install PySide2`
+You'll see console output like:
+```
+================================================================================
+SHOTGUN TOOLKIT: PySide6 not found, attempting auto-installation...
+Python executable: C:\Program Files\Blender Foundation\Blender 4.3\4.3\python\bin\python.exe
+================================================================================
+Installing PySide6 to user-local directory (this may take 1-2 minutes)...
+================================================================================
+PySide6 installation completed successfully!
+```
 
-If you are using Windows, make sure you run and Administrator console, as the vanilla installation of Blender might be in `Program Files` folder, which only administrators have write access to.
+### Manual Installation (Optional)
 
-Alternatively for more modular pipelines, where the location of Pyside2 is more bespoke:
+If you prefer to install manually or use a custom location:
 
-`PYSIDE2_PYTHONPATH` Environment variable can be used to configure this location if you decide not to install it within Blender python site-packages.
+**PySide6 (Blender 4.3+, 5.0+):**
+```bash
+C:\Program Files\Blender Foundation\Blender 5.0\5.0\python\bin\python.exe -m pip install PySide6 --user
+```
 
-If the shotgun menu does not show up after you launch Blender from Shotgun Desktop, please check the console for any possible errors:
+**PySide2 (Legacy Blender versions):**
+```bash
+C:\Program Files\Blender Foundation\Blender 2.82\2.82\python\bin\python.exe -m pip install PySide2
+```
+
+**Custom Location (Advanced):**
+
+`PYSIDE2_PYTHONPATH` Environment variable can be used to configure a custom PySide2/PySide6 location.
+
+### Troubleshooting
+
+If the Shotgun menu does not show up after launching Blender from Shotgun Desktop:
+
+1. **Open Blender's System Console**: Window → Toggle System Console
+2. Look for error messages starting with "SHOTGUN TOOLKIT:" or "SHOTGUN ADDON:"
+3. Check for "SHOTGUN MENU: draw() function called!" when clicking the menu
 
 ![tk-blender_09](config/images/tk-blender_09.png)
 
