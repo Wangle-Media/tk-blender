@@ -470,13 +470,41 @@ def boostrap():
         sys.path.insert(0, SGTK_MODULE_PATH)
 
     engine_startup_path = os.environ.get("SGTK_BLENDER_ENGINE_STARTUP")
-    
-    # Note: The engine sets SHOTGUN_SKIP_QTWEBENGINEWIDGETS_IMPORT=1 on Windows
-    # to handle QtWebEngine issues, so no monkey patching needed
 
     spec = importlib.util.spec_from_file_location("sgtk_blender_engine_startup", engine_startup_path)
     engine_startup = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(engine_startup)
+
+    if PYSIDE6_IMPORTED and sys.platform == "win32":
+        # Patch Toolkit's Qt importer to skip QtWebEngine* modules on Windows.
+        # These modules deadlock on import; patching at this level is more
+        # reliable than the env-var approach since it intercepts the import
+        # before Toolkit can attempt it.
+        def _import_pyside6(self):
+            import PySide6
+            import pkgutil
+
+            modules_dict = {}
+            for module in pkgutil.iter_modules(PySide6.__path__):
+                if "QtWebEngine" in module.name:
+                    continue
+                try:
+                    wrapper = __import__("PySide6", globals(), locals(), [module.name])
+                    if hasattr(wrapper, module.name):
+                        modules_dict[module.name] = getattr(wrapper, module.name)
+                except Exception as e:
+                    pass
+
+            return (
+                PySide6.__name__,
+                PySide6.__version__,
+                PySide6,
+                modules_dict,
+                self._to_version_tuple(PySide6.__version__),
+            )
+
+        from tank.util.qt_importer import QtImporter
+        QtImporter._import_pyside6 = _import_pyside6
 
     # Fire up Toolkit and the environment engine.
     engine_startup.start_toolkit()
