@@ -17,6 +17,7 @@
 # ##### END GPL LICENSE BLOCK #####
 
 
+import os
 import bpy
 
 import sgtk
@@ -34,6 +35,47 @@ class SceneOperation(HookClass):
     Hook called to perform an operation with the
     current scene
     """
+
+    def _apply_render_path(self, context, file_path):
+        """
+        Resolve the render output template for the current context and
+        set it on every scene in the file. Frame padding (####) is
+        appended so RR and Blender's own renderer both pick up the
+        correct per-frame filenames.
+        """
+        engine = sgtk.platform.current_engine()
+        if not engine:
+            return
+
+        tk = engine.sgtk
+        is_shot = context.entity and context.entity.get("type") == "Shot"
+
+        if is_shot:
+            work_tmpl_name = "blender_shot_work"
+            render_tmpl_name = "blender_shot_render"
+        else:
+            work_tmpl_name = "blender_asset_work"
+            render_tmpl_name = "blender_asset_render"
+
+        try:
+            work_template = tk.templates.get(work_tmpl_name)
+            render_template = tk.templates.get(render_tmpl_name)
+            if not work_template or not render_template:
+                return
+
+            fields = work_template.get_fields(file_path)
+            fields.update(context.as_template_fields(render_template, validate=True))
+
+            render_path = render_template.apply_fields(fields)
+            os.makedirs(os.path.dirname(render_path), exist_ok=True)
+
+            for scene in bpy.data.scenes:
+                scene.render.filepath = render_path + "####"
+
+            engine.logger.debug("Render path set to: %s####" % render_path)
+
+        except Exception as e:
+            engine.logger.warning("Could not set render path: %s" % e)
 
     def execute(
         self,
@@ -79,26 +121,19 @@ class SceneOperation(HookClass):
                                 all others     - None
         """
 
-        print(
-            operation,
-            file_path,
-            context,
-            parent_action,
-            file_version,
-            read_only,
-            **kwargs
-        )
         if operation == "current_path":
             return bpy.data.filepath
 
         elif operation == "open":
             bpy.ops.wm.open_mainfile(filepath=file_path)
+            self._apply_render_path(context, file_path)
 
         elif operation == "save":
             bpy.ops.wm.save_mainfile("EXEC_AREA")
 
         elif operation == "save_as":
             bpy.ops.wm.save_mainfile(filepath=file_path)
+            self._apply_render_path(context, file_path)
 
         elif operation == "reset":
             if bpy.data.is_dirty:
