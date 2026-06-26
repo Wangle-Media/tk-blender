@@ -13,7 +13,6 @@
 
 import os
 import sys
-import imp
 import time
 import ast
 import inspect
@@ -401,7 +400,7 @@ def insert_main_menu(menu_class, before_menu_class):
             func=ast.Attribute(
                 value=ast.Name(id="layout", ctx=ast.Load()), attr="menu", ctx=ast.Load()
             ),
-            args=[ast.Str(s=menu_class.__name__)],
+            args=[ast.Constant(value=menu_class.__name__)],
             keywords=[],
         )
     )
@@ -475,7 +474,9 @@ def boostrap():
     # Note: The engine sets SHOTGUN_SKIP_QTWEBENGINEWIDGETS_IMPORT=1 on Windows
     # to handle QtWebEngine issues, so no monkey patching needed
 
-    engine_startup = imp.load_source("sgtk_blender_engine_startup", engine_startup_path)
+    spec = importlib.util.spec_from_file_location("sgtk_blender_engine_startup", engine_startup_path)
+    engine_startup = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(engine_startup)
 
     # Fire up Toolkit and the environment engine.
     engine_startup.start_toolkit()
