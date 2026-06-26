@@ -521,40 +521,35 @@ def error_importing_pyside2(*args):
     bpy.ops.shotgun.logger(level="ERROR", message=PYSIDE2_MISSING_MESSAGE)
 
 
+def _draw_shotgun_topbar_menu(self, context):
+    self.layout.menu(TOPBAR_MT_shotgun.bl_idname)
+
+
 def register():
     print("=" * 80)
     print("SHOTGUN ADDON: Starting registration...")
     print("=" * 80)
-    
+
     bpy.utils.register_class(ShotgunConsoleLog)
     print("SHOTGUN ADDON: Registered ShotgunConsoleLog")
 
     if not PYSIDE2_IMPORTED and not PYSIDE6_IMPORTED:
         print("SHOTGUN ADDON: No Qt bindings available, skipping menu registration")
-        # bpy.app.timers.register(error_importing_pyside2, first_interval=5)
         load_factory_startup_post.append(error_importing_pyside2)
         return
 
     bpy.utils.register_class(ShotgunMenuCommand)
     print("SHOTGUN ADDON: Registered ShotgunMenuCommand operator")
-    
+
     bpy.utils.register_class(QtWindowEventLoop)
     print("SHOTGUN ADDON: Registered QtWindowEventLoop")
-    
-    TOPBAR_MT_help = bpy.types.TOPBAR_MT_help
-    print(f"SHOTGUN ADDON: Found TOPBAR_MT_help: {TOPBAR_MT_help}")
-    
-    TOPBAR_MT_editor_menus = insert_main_menu(
-        TOPBAR_MT_shotgun, before_menu_class=TOPBAR_MT_help
-    )
-    print(f"SHOTGUN ADDON: Created modified TOPBAR_MT_editor_menus")
-    
-    bpy.utils.register_class(TOPBAR_MT_editor_menus)
-    print("SHOTGUN ADDON: Registered modified TOPBAR_MT_editor_menus")
-    
+
     bpy.utils.register_class(TOPBAR_MT_shotgun)
     print("SHOTGUN ADDON: Registered TOPBAR_MT_shotgun menu class")
-    
+
+    bpy.types.TOPBAR_MT_editor_menus.append(_draw_shotgun_topbar_menu)
+    print("SHOTGUN ADDON: Appended Shotgun menu to topbar")
+
     print("=" * 80)
     print("SHOTGUN ADDON: Registration complete! Menu should be visible.")
     print("=" * 80)
@@ -568,5 +563,6 @@ def unregister():
     if not PYSIDE2_IMPORTED and not PYSIDE6_IMPORTED:
         return
 
+    bpy.types.TOPBAR_MT_editor_menus.remove(_draw_shotgun_topbar_menu)
     bpy.utils.unregister_class(TOPBAR_MT_shotgun)
     bpy.utils.unregister_class(ShotgunMenuCommand)
