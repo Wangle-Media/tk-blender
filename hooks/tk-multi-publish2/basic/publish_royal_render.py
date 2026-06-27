@@ -1,3 +1,4 @@
+import os
 import bpy
 import sgtk
 
@@ -58,6 +59,19 @@ class BlenderRoyalRenderPublishPlugin(HookBaseClass):
         self.logger.info(
             "Launching rrSubmitter for: %s" % bpy.data.filepath
         )
+
+        # Set env vars so rrSubmit_Blender_1+.py can inject them into the job XML
+        engine = sgtk.platform.current_engine()
+        context = engine.context
+        if context.project:
+            os.environ["SGTK_RR_PROJECT"] = context.project.get("name", "")
+        if context.user:
+            sg_user = engine.sgtk.shotgun.find_one(
+                "HumanUser", [["id", "is", context.user.get("id")]], ["login"]
+            )
+            if sg_user and sg_user.get("login"):
+                os.environ["SGTK_RR_USER"] = sg_user.get("login")
+                self.logger.debug("RR submit user: %s" % sg_user.get("login"))
 
         result = bpy.ops.royalrender.submitscene()
 
